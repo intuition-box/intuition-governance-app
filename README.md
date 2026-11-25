@@ -4,7 +4,9 @@ The veTRUST governance site for Intuition. It lists proposals straight from the 
 
 ## Live site
 
-The site is published on IPFS as a static build. Open it through a subdomain gateway:
+The site runs at https://gov.intuition.box/, built from `main`.
+
+Releases are also published on IPFS as static builds. Open one through a subdomain gateway:
 
 https://bafybeih4kwjo23lgpxyevvabgymzjpgebslh7vibgn5p4hpespthodypnq.ipfs.dweb.link/
 

@@ -1,113 +1,60 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code in this repository.
 
-## Project Overview
+## What this is
 
-Taiko DAO UI Monorepo - A Yarn workspaces monorepo containing the frontend for Taiko's decentralized governance system built on Aragon OSx.
+The veTRUST governance site for Intuition. It lists proposals straight from the chain over the public RPC, and lets veTRUST holders veto, execute and create proposals, and wrap and lock TRUST. There is no indexer, subgraph, database or backend.
 
-## Monorepo Structure
+## Toolchain
 
-Three packages in `packages/`:
+- pnpm 11.21.0 (`packageManager` in `package.json`) and Node 26 (`.nvmrc`). Never npm, yarn or bun.
+- One lockfile: `pnpm-lock.yaml` at the root. CI rejects any other.
+- Install scripts run only for the packages listed in `allowBuilds` in `pnpm-workspace.yaml`. A new dependency with an install script needs an entry there, or `pnpm install` fails.
 
-- **ui** (dao-ui): Main Next.js frontend for the Taiko DAO - React 18, Tailwind, wagmi/viem for Web3
-- **aragon-ods-fork** (@aragon/ods): Customized fork of Aragon's Open Design System - React component library with Storybook
-- **drill-report**: SvelteKit app (uses pnpm separately)
+## Packages
 
-## Common Commands
+- `packages/ui` (`dao-ui`): the site. Next.js 15, pages router, static export.
+- `packages/aragon-ods-fork` (`@aragon/ods`): the component library the site imports through `workspace:*`. Its `dist/` is committed: rebuild it with `pnpm --filter @aragon/ods build` after changing its source.
+- `packages/drill-report`: a separate SvelteKit app. The site does not use it.
 
-### UI Package (packages/ui)
+## Commands
+
 ```bash
-cd packages/ui
-bun install        # Install dependencies
-bun dev            # Start Next.js dev server
-bun build          # Production build
-bun lint           # ESLint
-bun format         # Prettier
+pnpm install --frozen-lockfile
+pnpm --filter dao-ui dev          # dev server
+pnpm --filter dao-ui build        # static export in packages/ui/out
+pnpm --filter dao-ui lint
+pnpm --filter dao-ui type-check
+pnpm --filter dao-ui test         # vitest
 ```
 
-### Aragon ODS Fork (packages/aragon-ods-fork)
-```bash
-cd packages/aragon-ods-fork
-yarn install
-yarn build              # Rollup build
-yarn build:watch        # Watch mode
-yarn storybook          # Storybook on port 6006
-yarn test               # Jest watch mode
-yarn test:coverage      # Jest with coverage
-yarn lint               # ESLint (--max-warnings=0)
-yarn type-check         # TypeScript check
-```
+CI (`.github/workflows/dao-ui.yml`) runs lint, type-check, test and build.
 
-### Drill Report (packages/drill-report)
-```bash
-cd packages/drill-report
-pnpm install
-pnpm dev           # Vite dev server
-pnpm build         # Production build
-pnpm check         # Svelte + TypeScript check
-```
+## Where the code is
 
-## Architecture
+Every route renders the governance interface in `packages/ui/src/governance`:
 
-### Plugin System (packages/ui/src/plugins/)
+| Route | Module |
+| --- | --- |
+| `/` and `/plugins/community-proposals/` | `screen.tsx`, the proposals; `?proposal=<id>` opens one |
+| `/proposals/new/` | `create.tsx` |
+| `/setup/` | `setup.tsx`, wrap and lock TRUST |
 
-The UI uses a plugin architecture where each governance module is self-contained:
+- `deployment.ts` pins the mainnet (1155) and testnet (13579) contracts. `NEXT_PUBLIC_GOVERNANCE_NETWORK=testnet` picks testnet at build time.
+- `rpc.ts` reads the chain with viem and batches reads through Multicall3.
+- `storage.ts` keeps imported transactions in `localStorage`, per chain, DAO and plugin.
+- The governance tests are in `src/governance/__tests__`.
 
-- **optimistic-proposals**: Community proposal voting with veto mechanism (mapped to `/community-proposals`)
-- **multisig**: Taiko Council draft proposals (hidden unless signer)
-- **emergency-multisig**: Emergency proposals with encryption (hidden unless signer)
-- **security-council**: Security Council management
-- **delegates**: Delegate profiles and delegation
+Legacy template modules (`src/plugins` and the code it uses) remain in the tree. No route uses them.
 
-Each plugin folder contains:
-- `index.tsx` - Plugin entry and registration
-- `pages/` - Route pages
-- `components/` - Plugin-specific components
-- `hooks/` - Data fetching hooks (wagmi/viem)
-- `artifacts/` - Smart contract ABIs
+## Build and hosting
 
-Plugin registration in `src/plugins/index.ts` - each plugin defines id, folder, address, and visibility rules.
+- `next.config.js` sets `output: "export"` and `trailingSlash: true`, so every route is a folder with an `index.html`. There is no server: `next start` does not work.
+- The build ID is the git commit, so the same commit builds the same files. Releases go to IPFS, as the README describes.
+- The `Dockerfile` builds the export and serves it with nginx on port 80. `nginx.conf` sets the redirects, cache rules and security headers. A new workspace package needs its `package.json` copied in the Dockerfile's dependency layer.
+- A dynamic route must list its pages in `getStaticPaths` with `fallback: false`, as `pages/plugins/[id].tsx` does.
 
-### Encryption System
+## Configuration
 
-Security Council proposals use two-layer encryption:
-1. Symmetric key encrypts proposal metadata/actions
-2. Each SC member's public key encrypts the symmetric key
-3. Members derive keypairs by signing a deterministic payload (`DETERMINISTIC_EMERGENCY_PAYLOAD` in constants.ts)
-
-### Key Configuration
-
-Environment variables in `.env` (see `.env.example`):
-- Contract addresses for DAO, plugins, token
-- Network settings (chain, RPC via Alchemy)
-- IPFS/Pinata for metadata storage
-- WalletConnect project ID
-
-Constants exported from `src/constants.ts` - all prefixed with `PUB_`.
-
-### Styling
-
-UI uses Tailwind with Aragon ODS preset. The ODS fork provides base components; UI extends with custom colors via CSS variables (`--ods-color-*`).
-
-## Data Layer (No Traditional Backend)
-
-This is a fully decentralized frontend with no backend server:
-
-1. **The Graph Subgraph** - Indexed proposal data via GraphQL
-   - Apollo Client queries in `src/utils/gql/`
-   - Configured via `NEXT_PUBLIC_SUBGRAPH_URL`
-
-2. **Direct Smart Contract Reads** - Real-time on-chain state via wagmi/viem
-   - Each plugin has hooks reading from contracts
-   - ABIs in each plugin's `artifacts/` folder
-
-3. **IPFS/Pinata** - Proposal metadata storage
-   - Utilities in `src/utils/ipfs.ts`
-
-## Web3 Integration
-
-- **wagmi/viem**: Primary Web3 library
-- **@tanstack/react-query**: Data caching
-- **WalletConnect**: Wallet connection via Web3Modal
-- Contract interactions via custom hooks in each plugin's `hooks/` folder
+All optional, and inlined into the public JavaScript at build time, so never a secret: `NEXT_PUBLIC_GOVERNANCE_NETWORK`, `NEXT_PUBLIC_RPC_URL` and `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`. See `packages/ui/.env.example`.
