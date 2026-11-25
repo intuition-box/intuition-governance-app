@@ -1,16 +1,30 @@
 name: DAO UI CI/CD
 
+# Runs on any change to what the site is built from: the app, the component
+# package it imports, and the workspace's install and toolchain files.
 on:
     push:
         branches: [main]
         paths:
           - "packages/ui/**"
+          - "packages/aragon-ods-fork/**"
+          - "package.json"
+          - "pnpm-lock.yaml"
+          - "pnpm-workspace.yaml"
+          - ".nvmrc"
+          - ".github/actions/install-pnpm-dependencies/**"
           - ".github/workflows/dao-ui.yml"
 
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
         paths:
         - "packages/ui/**"
+        - "packages/aragon-ods-fork/**"
+        - "package.json"
+        - "pnpm-lock.yaml"
+        - "pnpm-workspace.yaml"
+        - ".nvmrc"
+        - ".github/actions/install-pnpm-dependencies/**"
         - ".github/workflows/dao-ui.yml"
 
 permissions:
@@ -29,7 +43,17 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y git
 
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
+
+            # The workspace has one lockfile, pnpm-lock.yaml at the root. Any
+            # other is a leftover that no install reads.
+            - name: Reject other lockfiles
+              run: |
+                extra=$(git ls-files '*package-lock.json' '*yarn.lock' '*pnpm-lock.yaml' | { grep -vx 'pnpm-lock.yaml' || true; } | tr '\n' ' ')
+                if [ -n "$extra" ]; then
+                  echo "::error::This repo is pnpm-only, with one lockfile at the root. Remove: $extra"
+                  exit 1
+                fi
 
             - name: Install pnpm dependencies
               uses: ./.github/actions/install-pnpm-dependencies
@@ -42,3 +66,7 @@ jobs:
 
             - name: Run tests
               run: pnpm --filter dao-ui test
+
+            # The static export the Dockerfile builds and nginx serves.
+            - name: Build
+              run: pnpm --filter dao-ui build

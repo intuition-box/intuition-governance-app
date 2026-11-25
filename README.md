@@ -20,6 +20,8 @@ Each release has a new CID. Imported transaction history is stored per site orig
 
 ## Develop
 
+With pnpm 11.21.0 and Node 26, as `package.json` and `.nvmrc` pin them:
+
 ```sh
 pnpm install --frozen-lockfile
 pnpm --filter dao-ui dev
