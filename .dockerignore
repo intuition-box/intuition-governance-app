@@ -1,0 +1,11 @@
+# What the image never needs: installed packages, build output, local env
+# files and git. Each pattern starts with **/ to reach into every package.
+.git
+**/node_modules
+**/.next
+**/out
+**/.svelte-kit
+**/*.tsbuildinfo
+**/.DS_Store
+**/.env
+**/.env.*

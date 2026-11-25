@@ -43,6 +43,10 @@ npx -y ipfs-car@3.1.0 pack out --output site.car     # prints the root CID
 
 To verify a release, check out its commit, run these two commands, and compare the printed CID with the table above. Publishing uploads the CAR file to an IPFS pinning service, which pins that exact CID.
 
+## Host as a container
+
+The `Dockerfile` builds the static export and serves it with nginx on port 80. Build it from the repository root. The optional `NEXT_PUBLIC_*` values in `packages/ui/.env.example` are build arguments, because the build inlines them.
+
 ## More
 
 See [testnet setup, deployment provenance and limitations](docs/governance/testnet.md), the [RPC-first MVP specification](docs/governance/rpc-mvp.md), and the [Linear milestone plan](docs/governance/project-plan.md).
