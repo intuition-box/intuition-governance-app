@@ -1,6 +1,6 @@
-# What the image never needs: installed packages, build output, local env
-# files and git. Each pattern starts with **/ to reach into every package.
-.git
+# What the image never needs: installed packages, build output and local env
+# files. Each pattern starts with **/ to reach into every package. .git stays
+# in: next.config.js takes the build ID from the commit.
 **/node_modules
 **/.next
 **/out

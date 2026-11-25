@@ -47,7 +47,7 @@ To verify a release, check out its commit, run these two commands, and compare t
 
 ## Host as a container
 
-The `Dockerfile` builds the static export and serves it with nginx on port 80. Build it from the repository root. The optional `NEXT_PUBLIC_*` values in `packages/ui/.env.example` are build arguments, because the build inlines them.
+The `Dockerfile` builds the static export and serves it with nginx on port 80. Build it from the repository root. The optional `NEXT_PUBLIC_*` values in `packages/ui/.env.example` are build arguments, because the build inlines them. Like a release, the image takes its build ID from the commit, so a page's source names the commit it was built from.
 
 ## More
 

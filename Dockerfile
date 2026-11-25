@@ -3,18 +3,20 @@
 # The export has no server (`next start` refuses `output: "export"`). Build
 # it from the repository root, because the build needs the whole workspace.
 
-# Build: Node 26 and pnpm 11 as a standalone binary, the pnpm that reads
-# allowBuilds in pnpm-workspace.yaml. Never corepack: Node 26 no longer
-# bundles it.
+# Build: Node 26 as .nvmrc pins, and pnpm 11.21.0 as a standalone binary,
+# the packageManager in package.json and the pnpm that reads allowBuilds in
+# pnpm-workspace.yaml. Never corepack: Node 26 no longer bundles it.
 FROM node:26-slim AS build
 ENV PNPM_HOME=/pnpm
 # pnpm 11 puts its binary in a bin/ folder of its home.
 ENV PATH=$PNPM_HOME/bin:$PATH
-# python3, make and g++ let node-gyp compile bufferutil and utf-8-validate,
-# which ship no prebuilt binary for linux-arm64 and whose install scripts
-# have no fallback. This stage is discarded, so the image stays small.
+# git lets next.config.js take the build ID from the commit, as a release
+# build does. python3, make and g++ let node-gyp compile bufferutil and
+# utf-8-validate, which ship no prebuilt binary for linux-arm64 and whose
+# install scripts have no fallback. This stage is discarded, so the image
+# stays small.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl \
+  && apt-get install -y --no-install-recommends ca-certificates curl git \
     python3 make g++ \
   && rm -rf /var/lib/apt/lists/* \
   && curl -fsSL https://get.pnpm.io/install.sh \
