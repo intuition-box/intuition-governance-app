@@ -3,3 +3,7 @@ node_modules
 .env*
 .gstack/
 .superpowers/
+.DS_Store
+# pnpm only: the one lockfile is pnpm-lock.yaml at the root.
+package-lock.json
+yarn.lock

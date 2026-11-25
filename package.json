@@ -1,18 +1,9 @@
 {
   "name": "monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "workspaces": [
-    "packages/*"
-  ],
+  "private": true,
   "scripts": {
-    "pull:contracts": "cd packages/contracts && git pull origin main",
-    "pull:ui": "cd packages/ui && git pull origin main",
-    "build:ui": "cd packages/ui && yarn build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:ui": "pnpm --filter dao-ui build"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC"
 }
